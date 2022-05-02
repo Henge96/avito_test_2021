@@ -1,6 +1,6 @@
 server:
   host: 0.0.0.0
-  ports:
+  port:
     http: 8080
 db:
     driver: postgres
