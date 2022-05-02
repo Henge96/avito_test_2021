@@ -5,9 +5,9 @@ import (
 	"os"
 )
 
-func TakeConfigFromYaml(s *string) (*Config, error) {
+func TakeConfigFromYaml(s string) (*Config, error) {
 
-	file, err := os.Open(*s)
+	file, err := os.Open(s)
 	if err != nil {
 		return nil, err
 	}

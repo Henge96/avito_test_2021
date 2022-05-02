@@ -21,7 +21,7 @@ func main() {
 
 	flag.Parse()
 
-	configStruct, err := config.TakeConfigFromYaml(&configPath)
+	configStruct, err := config.TakeConfigFromYaml(configPath)
 	if err != nil {
 		log.Fatal(err)
 	}
