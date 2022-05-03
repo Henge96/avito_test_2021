@@ -1,13 +1,13 @@
 package config
 
 type Config struct {
-	Server
-	Db
+	Server Server `yaml:"server"`
+	Db     Db     `yaml:"db"`
 }
 
 type Server struct {
 	Host string `yaml:"host"`
-	Port
+	Port Port   `yaml:"port"`
 }
 
 type Db struct {

@@ -78,7 +78,7 @@ func TestTakeConfigFromYaml(t *testing.T) {
 		}
 
 		if *result != *val.expectedRes {
-			t.Errorf("Error. Expected %v, got %v", result, val.expectedRes)
+			t.Errorf("Error. Expected %v, got %v", val.expectedRes, result)
 		}
 
 	}

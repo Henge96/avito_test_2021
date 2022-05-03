@@ -26,37 +26,30 @@ func TakeConfigFromYaml(s string) (*Config, error) {
 
 	if config.Server.Port.Http == "" {
 		config.Server.Port.Http = "8080"
-
 	}
 
 	if config.Db.Driver == "" {
 		config.Db.Driver = "postgres"
-
 	}
 
 	if config.Db.User == "" {
 		config.Db.User = "postgres"
-
 	}
 
 	if config.Db.Password == "" {
 		config.Db.Password = "postgres"
-
 	}
 
 	if config.Db.HostDb == "" {
 		config.Db.HostDb = "localhost"
-
 	}
 
 	if config.Db.PortDb == "" {
 		config.Db.PortDb = "5432"
-
 	}
 
 	if config.Db.Dbname == "" {
 		config.Db.Dbname = "postgres"
-
 	}
 
 	if config.Db.Mode == "" {
