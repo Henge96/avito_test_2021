@@ -1,0 +1,11 @@
+server:
+  port:
+    http: 5050
+db:
+  driver: postgres
+  user: postgres
+  password: postgres
+  hostdb: localhost
+  portdb: 5432
+  dbname: postgres
+  mode: disable
