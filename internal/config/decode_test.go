@@ -17,6 +17,18 @@ func TestTakeConfigFromYaml(t *testing.T) {
 			&Config{
 				Server: Server{
 					Host: "0.0.0.0",
+					Port: Port{
+						Http: "8080",
+					},
+				},
+				Db: Db{
+					Driver:   "postgres",
+					User:     "postgres",
+					Password: "postgres",
+					HostDb:   "localhost",
+					PortDb:   "5432",
+					Dbname:   "postgres",
+					Mode:     "disable",
 				},
 			},
 		},
@@ -43,7 +55,7 @@ func TestTakeConfigFromYaml(t *testing.T) {
 				Server: Server{
 					Host: "0.0.0.0",
 					Port: Port{
-						Http: "5050",
+						Http: "8888",
 					},
 				},
 				Db: Db{
@@ -53,7 +65,7 @@ func TestTakeConfigFromYaml(t *testing.T) {
 					HostDb:   "localhost",
 					PortDb:   "5432",
 					Dbname:   "postgres",
-					Mode:     "disable",
+					Mode:     "enable",
 				},
 			},
 		},

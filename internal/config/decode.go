@@ -20,35 +20,47 @@ func TakeConfigFromYaml(s string) (*Config, error) {
 		return nil, err
 	}
 
-	switch {
-
-	case config.Server.Host == "":
+	if config.Server.Host == "" {
 		config.Server.Host = "0.0.0.0"
+	}
 
-	case config.Server.Port.Http == "":
+	if config.Server.Port.Http == "" {
 		config.Server.Port.Http = "8080"
 
-	case config.Db.Driver == "":
+	}
+
+	if config.Db.Driver == "" {
 		config.Db.Driver = "postgres"
 
-	case config.Db.User == "":
+	}
+
+	if config.Db.User == "" {
 		config.Db.User = "postgres"
 
-	case config.Db.Password == "":
+	}
+
+	if config.Db.Password == "" {
 		config.Db.Password = "postgres"
 
-	case config.Db.HostDb == "":
+	}
+
+	if config.Db.HostDb == "" {
 		config.Db.HostDb = "localhost"
 
-	case config.Db.PortDb == "":
+	}
+
+	if config.Db.PortDb == "" {
 		config.Db.PortDb = "5432"
 
-	case config.Db.Dbname == "":
+	}
+
+	if config.Db.Dbname == "" {
 		config.Db.Dbname = "postgres"
 
-	case config.Db.Mode == "":
-		config.Db.Mode = "disable"
+	}
 
+	if config.Db.Mode == "" {
+		config.Db.Mode = "disable"
 	}
 
 	return config, nil

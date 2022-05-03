@@ -1,12 +1,10 @@
 server:
   host: 0.0.0.0
   port:
-    http: 5050
+    http: 8888
 db:
   driver: postgres
   user: postgres
   password: postgres
-  hostdb: localhost
-  portdb: 5432
   dbname: postgres
-  mode: disable
+  mode: enable
