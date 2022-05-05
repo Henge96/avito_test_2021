@@ -35,14 +35,15 @@ func main() {
 
 func Run(c *config.Config) error {
 
-	db, err := sql.Open(c.Db.Driver, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", c.Db.User,
-		c.Db.Password, c.Db.Dbname, c.Db.Mode))
+	db, err := sql.Open(c.Db.Driver, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s host=%s port=%s", c.Db.User,
+		c.Db.Password, c.Db.Dbname, c.Db.Mode, c.Db.HostDb, c.Db.PortDb))
 	defer db.Close()
 	if err != nil {
 		panic(err)
 	}
 
 	nachinka := repo.NewNachinka(db)
+
 	a := app.NewApplication(nachinka)
 
 	server := &http.Server{

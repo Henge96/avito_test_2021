@@ -2,19 +2,23 @@ version: "3"
 
 services:
   server:
-    build: ./
-   restart: always
-   ports:
-    - "8080:8080"
-  environment:
- - POSTGRES_ADDR=postgres
- - POSTGRES_HOST: "localhost"
- - POSTGRES_PORTS:
-     - "5432:5432"
- - POSTGRES_DB: "postgres"
- - POSTGRES_PASSWORD: "postgres"
- - POSTGRES_USER: "postgres"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
 
   postgres:
-  image: "postgres:14.2-alpine"
-  restart: "always"
+    image: postgres:14.2-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DRIVER: "postgres"
+      POSTGRES_SSL_MODE: "disable"
+    ports:
+      - "5432:5432"
