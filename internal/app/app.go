@@ -7,6 +7,7 @@ type Repo interface {
 	UpdateBalanceByUserId(ctx context.Context, money float64, userId int) error
 	CreateTransactionByUsers(ctx context.Context, userId int, receiverId int, money float64) error
 	GetUserTransactionsByUserId(ctx context.Context, userId int) ([]Transaction, error)
+	CreateWalletByUserId(ctx context.Context, UserId int) error
 }
 
 type Core struct {

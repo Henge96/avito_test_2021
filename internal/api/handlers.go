@@ -1,7 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"packs/internal/app"
@@ -163,10 +165,24 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wallet.ReceiverId = wallet.UserId
+
 	if wallet.Money == 0 {
 		ErrHandler(w, err, 400)
 		return
 	} else if wallet.Money > 0 {
+
+		err = a.app.CheckWallet(r.Context(), wallet.UserId)
+		if err != nil && false == errors.Is(err, sql.ErrNoRows) {
+			ErrHandler(w, err, 400)
+			return
+		} else if true == errors.Is(err, sql.ErrNoRows) {
+			err = a.app.CreateWallet(r.Context(), wallet.UserId)
+			if err != nil {
+				ErrHandler(w, err, 500)
+				return
+			}
+
+		}
 
 		err = a.app.UpdateBalance(r.Context(), wallet.Money*-1, wallet.UserId)
 		if err != nil {
@@ -181,6 +197,12 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else if wallet.Money < 0 {
+
+		err = a.app.CheckWallet(r.Context(), wallet.UserId)
+		if err != nil {
+			ErrHandler(w, err, 400)
+			return
+		}
 
 		err = a.app.UpdateBalance(r.Context(), wallet.Money*-1, wallet.UserId)
 		if err != nil {

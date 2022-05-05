@@ -31,6 +31,7 @@ func (a *Core) CreateTransaction(ctx context.Context, userId int, receiverId int
 
 func (a *Core) CheckWallet(ctx context.Context, userId int) error {
 	_, err := a.repo.GetWalletByUserId(ctx, userId)
+
 	if err != nil {
 		return err
 	}
@@ -61,4 +62,8 @@ func (a *Core) TransferWithWallet(ctx context.Context, userId int, receiverId in
 func (a *Core) GetUserTransactions(ctx context.Context, wallet Wallet) ([]Transaction, error) {
 
 	return a.repo.GetUserTransactionsByUserId(ctx, wallet.UserId)
+}
+
+func (a *Core) CreateWallet(ctx context.Context, userId int) error {
+	return a.repo.CreateWalletByUserId(ctx, userId)
 }

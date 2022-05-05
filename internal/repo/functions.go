@@ -12,6 +12,7 @@ func (nac Nachinka) GetWalletByUserId(ctx context.Context, userId int) (*app.Wal
 
 	row := nac.db.QueryRowContext(ctx, "SELECT * FROM wallet where user_id = $1", userId)
 	err := row.Scan(&wallet.Id, &wallet.UserId, &wallet.Balance)
+
 	if err != nil {
 		return nil, err
 	}
@@ -39,10 +40,12 @@ func (nac Nachinka) CreateTransactionByUsers(ctx context.Context, userId int, re
 }
 
 func (nac Nachinka) GetUserTransactionsByUserId(ctx context.Context, userId int) ([]app.Transaction, error) {
-	rows, err := nac.db.QueryContext(ctx, "select * from transaction where wallet_id = (select id from wallet where user_id = $1) order by money, date", userId)
+	rows, err := nac.db.QueryContext(ctx, "select * from transaction where wallet_id = (select id from wallet where user_id = $1) order by date, money", userId)
+
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	result := []app.Transaction{}
@@ -57,5 +60,15 @@ func (nac Nachinka) GetUserTransactionsByUserId(ctx context.Context, userId int)
 	}
 
 	return result, nil
+
+}
+
+func (nac Nachinka) CreateWalletByUserId(ctx context.Context, UserId int) error {
+	_, err := nac.db.ExecContext(ctx, "insert into wallet (user_id, balance) values ($1, 0.0)", UserId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }

@@ -13,6 +13,7 @@ type Application interface {
 	CheckWallet(ctx context.Context, userId int) error
 	TransferWithWallet(ctx context.Context, userId int, receiverId int, money float64) error
 	GetUserTransactions(ctx context.Context, wallet app.Wallet) ([]app.Transaction, error)
+	CreateWallet(ctx context.Context, userId int) error
 }
 
 type Api struct {
