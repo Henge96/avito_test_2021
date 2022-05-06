@@ -72,3 +72,11 @@ func (nac Nachinka) CreateWalletByUserId(ctx context.Context, UserId int) error 
 	return nil
 
 }
+
+func (nac Nachinka) StopConnect() error {
+	err := nac.db.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}

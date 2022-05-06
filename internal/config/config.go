@@ -1,13 +1,16 @@
 package config
 
+import "time"
+
 type Config struct {
 	Server Server `yaml:"server"`
 	Db     Db     `yaml:"db"`
 }
 
 type Server struct {
-	Host string `yaml:"host"`
-	Port Port   `yaml:"port"`
+	Host    string  `yaml:"host"`
+	Port    Port    `yaml:"port"`
+	Timeout Timeout `yaml:"timeout"`
 }
 
 type Db struct {
@@ -22,4 +25,8 @@ type Db struct {
 
 type Port struct {
 	Http string `yaml:"http"`
+}
+
+type Timeout struct {
+	ServerTimeout time.Duration `yaml:"server_timeout"`
 }

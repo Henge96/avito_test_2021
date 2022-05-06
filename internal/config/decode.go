@@ -28,6 +28,10 @@ func TakeConfigFromYaml(s string) (*Config, error) {
 		config.Server.Port.Http = "8080"
 	}
 
+	if config.Server.Timeout.ServerTimeout == 0 {
+		config.Server.Timeout.ServerTimeout = 30
+	}
+
 	if config.Db.Driver == "" {
 		config.Db.Driver = "postgres"
 	}
