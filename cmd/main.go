@@ -16,6 +16,7 @@ import (
 	"packs/internal/app"
 	"packs/internal/config"
 	"packs/internal/repo"
+	"time"
 )
 
 func main() {
@@ -85,8 +86,8 @@ func Run(c *config.Config) error {
 	signal.Notify(ch, os.Interrupt)
 
 	<-ch
-	
-	ctx, cancel := context.WithTimeout(context.Background(), c.Server.Timeout.ServerTimeout)
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.Server.Timeout.ServerTimeout*time.Second)
 	defer cancel()
 
 	err = server.Shutdown(ctx)
