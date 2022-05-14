@@ -63,7 +63,6 @@ func Run(c *config.Config) error {
 
 	nachinka := repo.NewNachinka(db)
 
-	// need err?
 	defer nachinka.StopConnect()
 
 	a := app.NewApplication(nachinka)
