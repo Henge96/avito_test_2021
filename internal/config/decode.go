@@ -6,7 +6,6 @@ import (
 )
 
 func TakeConfigFromYaml(s string) (*Config, error) {
-
 	file, err := os.Open(s)
 	if err != nil {
 		return nil, err
@@ -61,5 +60,4 @@ func TakeConfigFromYaml(s string) (*Config, error) {
 	}
 
 	return config, nil
-
 }

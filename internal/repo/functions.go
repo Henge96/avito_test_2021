@@ -21,7 +21,6 @@ func (nac Nachinka) GetWalletByUserId(ctx context.Context, userId int) (*app.Wal
 }
 
 func (nac Nachinka) UpdateBalanceByUserId(ctx context.Context, money float64, userId int) error {
-
 	_, err := nac.db.ExecContext(ctx, "UPDATE wallet SET balance = balance - $1 WHERE User_Id = $2", money, userId)
 	if err != nil {
 		return err
