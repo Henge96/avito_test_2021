@@ -20,7 +20,6 @@ import (
 )
 
 func main() {
-
 	var configPath string
 
 	flag.StringVar(&configPath, "config", "./config.yml", "path to config file")
@@ -62,7 +61,6 @@ func Run(c *config.Config) error {
 	}
 
 	nachinka := repo.NewNachinka(db)
-
 	defer nachinka.StopConnect()
 
 	a := app.NewApplication(nachinka)
@@ -81,7 +79,6 @@ func Run(c *config.Config) error {
 	}()
 
 	ch := make(chan os.Signal, 1)
-
 	signal.Notify(ch, os.Interrupt)
 
 	<-ch
