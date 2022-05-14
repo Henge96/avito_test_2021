@@ -60,20 +60,6 @@ func (a *Api) PrintBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/* balance.Balance = balance.Balance / 74.66
-
-	 как то подвязать валюту надо, про анмаршал не очень понял
-
-	client := http.Client{Timeout: 10 * time.Second}
-		resp, err := client.Get("http://api.exchangeratesapi.io/v1/latest?access_key=96ac3090873
-	80f45dd00b0af6b9657c5&symbols=USD")
-		if err != nil {
-		log.Println(err)
-		return
-	}
-
-	*/
-
 }
 
 func (a *Api) Transfer(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +72,6 @@ func (a *Api) Transfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// уточнить нужна ли двойная проверка + логика чисел у "money"
 	if wallet.Money < 0 || wallet.ReceiverId == wallet.UserId {
 		ErrHandler(w, err, 400)
 		return
@@ -217,7 +202,7 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
-	// перевод данных из бд
+
 	ReturnBalance, err := a.app.CheckBalance(r.Context(), wallet.UserId)
 	if err != nil {
 		ErrHandler(w, err, 500)
