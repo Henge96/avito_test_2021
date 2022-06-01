@@ -2,16 +2,19 @@ package api
 
 import (
 	"context"
+
 	"github.com/gorilla/mux"
+	"github.com/shopspring/decimal"
+
 	"packs/internal/app"
 )
 
 type Application interface {
-	CheckBalance(ctx context.Context, userId int) (float64, error)
-	UpdateBalance(ctx context.Context, money float64, userId int) error
-	CreateTransaction(ctx context.Context, userId int, receiverId int, money float64) error
+	CheckBalance(ctx context.Context, userId int, currency string) (decimal.Decimal, error)
+	UpdateBalance(ctx context.Context, money decimal.Decimal, userId int) error
+	CreateTransaction(ctx context.Context, userId int, receiverId int, money decimal.Decimal) error
 	CheckWallet(ctx context.Context, userId int) error
-	TransferWithWallet(ctx context.Context, userId int, receiverId int, money float64) error
+	TransferWithWallet(ctx context.Context, userId int, receiverId int, money decimal.Decimal) error
 	GetUserTransactions(ctx context.Context, wallet app.Wallet) ([]app.Transaction, error)
 	CreateWallet(ctx context.Context, userId int) error
 }

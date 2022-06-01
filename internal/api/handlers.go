@@ -4,8 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/shopspring/decimal"
+
 	"packs/internal/app"
 )
 
@@ -26,8 +30,6 @@ func MwHandler2(next http.Handler) http.Handler {
 }
 
 func ErrHandler(w http.ResponseWriter, err error, code int) {
-	// мб http.StatusText(code) ?
-	// спросить в чем разница при выводе err или err.Error()
 	http.Error(w, err.Error(), code)
 	log.Println(err)
 }
@@ -42,24 +44,21 @@ func (a *Api) PrintBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.app.CheckWallet(r.Context(), balance.UserId)
+	fmt.Println(balance.Money)
+
+	ReturnBalance, err := a.app.CheckBalance(r.Context(), balance.UserId, balance.Currency)
 	if err != nil {
 		ErrHandler(w, err, 400)
 		return
 	}
 
-	ReturnBalance, err := a.app.CheckBalance(r.Context(), balance.UserId)
+	result, _ := ReturnBalance.Float64()
+
+	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: result})
 	if err != nil {
 		ErrHandler(w, err, 400)
 		return
 	}
-
-	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: ReturnBalance})
-	if err != nil {
-		ErrHandler(w, err, 500)
-		return
-	}
-
 }
 
 func (a *Api) Transfer(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +71,7 @@ func (a *Api) Transfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if wallet.Money < 0 || wallet.ReceiverId == wallet.UserId {
+	if wallet.Money.IsNegative() || wallet.ReceiverId == wallet.UserId {
 		ErrHandler(w, err, 400)
 		return
 	}
@@ -95,16 +94,16 @@ func (a *Api) Transfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// не преобразованое число из бд
-	ReturnBalance, err := a.app.CheckBalance(r.Context(), wallet.UserId)
+	ReturnBalance, err := a.app.CheckBalance(r.Context(), wallet.UserId, wallet.Currency)
 	if err != nil {
 		ErrHandler(w, err, 500)
 		return
 	}
+	result, _ := ReturnBalance.Float64()
 
-	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: ReturnBalance})
+	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: result})
 	if err != nil {
-		ErrHandler(w, err, 500)
+		ErrHandler(w, err, 400)
 		return
 	}
 }
@@ -114,12 +113,6 @@ func (a *Api) PrintTransactions(w http.ResponseWriter, r *http.Request) {
 	var wallet app.Wallet
 
 	err := json.NewDecoder(r.Body).Decode(&wallet)
-	if err != nil {
-		ErrHandler(w, err, 400)
-		return
-	}
-
-	err = a.app.CheckWallet(r.Context(), wallet.UserId)
 	if err != nil {
 		ErrHandler(w, err, 400)
 		return
@@ -151,10 +144,10 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 
 	wallet.ReceiverId = wallet.UserId
 
-	if wallet.Money == 0 {
+	if wallet.Money.IsZero() {
 		ErrHandler(w, err, 400)
 		return
-	} else if wallet.Money > 0 {
+	} else if wallet.Money.IsPositive() {
 
 		err = a.app.CheckWallet(r.Context(), wallet.UserId)
 		if err != nil && false == errors.Is(err, sql.ErrNoRows) {
@@ -169,7 +162,7 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 
 		}
 
-		err = a.app.UpdateBalance(r.Context(), wallet.Money*-1, wallet.UserId)
+		err = a.app.UpdateBalance(r.Context(), wallet.Money.Mul(decimal.NewFromInt(-1)), wallet.UserId)
 		if err != nil {
 			ErrHandler(w, err, 500)
 			return
@@ -181,7 +174,7 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	} else if wallet.Money < 0 {
+	} else if wallet.Money.IsNegative() {
 
 		err = a.app.CheckWallet(r.Context(), wallet.UserId)
 		if err != nil {
@@ -189,13 +182,13 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = a.app.UpdateBalance(r.Context(), wallet.Money*-1, wallet.UserId)
+		err = a.app.UpdateBalance(r.Context(), wallet.Money.Mul(decimal.NewFromInt(-1)), wallet.UserId)
 		if err != nil {
 			ErrHandler(w, err, 500)
 			return
 		}
 
-		err = a.app.CreateTransaction(r.Context(), wallet.UserId, wallet.ReceiverId, wallet.Money*-1)
+		err = a.app.CreateTransaction(r.Context(), wallet.UserId, wallet.ReceiverId, wallet.Money.Mul(decimal.NewFromInt(-1)))
 		if err != nil {
 			ErrHandler(w, err, 500)
 			return
@@ -203,15 +196,16 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	ReturnBalance, err := a.app.CheckBalance(r.Context(), wallet.UserId)
+	ReturnBalance, err := a.app.CheckBalance(r.Context(), wallet.UserId, wallet.Currency)
 	if err != nil {
 		ErrHandler(w, err, 500)
 		return
 	}
+	result, _ := ReturnBalance.Float64()
 
-	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: ReturnBalance})
+	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: result})
 	if err != nil {
-		ErrHandler(w, err, 500)
+		ErrHandler(w, err, 400)
 		return
 	}
 

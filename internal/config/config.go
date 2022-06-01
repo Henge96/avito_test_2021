@@ -5,6 +5,7 @@ import "time"
 type Config struct {
 	Server Server `yaml:"server"`
 	Db     Db     `yaml:"db"`
+	Client Client `yaml:"client"`
 }
 
 type Server struct {
@@ -21,6 +22,11 @@ type Db struct {
 	PortDb   string `yaml:"portdb"`
 	Dbname   string `yaml:"dbname"`
 	Mode     string `yaml:"mode"`
+}
+
+type Client struct {
+	APILayerAPIKey   string `yaml:"rest_api_api_key"`
+	APILayerBasePath string `yaml:"rest_api_base_path"`
 }
 
 type Port struct {

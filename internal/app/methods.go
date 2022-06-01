@@ -2,17 +2,29 @@ package app
 
 import (
 	"context"
+
+	"github.com/shopspring/decimal"
 )
 
-func (a *Core) CheckBalance(ctx context.Context, userId int) (float64, error) {
+func (a *Core) CheckBalance(ctx context.Context, userId int, currency string) (decimal.Decimal, error) {
 	wallet, err := a.repo.GetWalletByUserId(ctx, userId)
 	if err != nil {
-		return 0, err
+		return decimal.Decimal{}, err
 	}
-	return wallet.Balance, nil
+
+	switch {
+	case currency != "" || currency != "RUB":
+		res, err := a.exchange.ExchangeCurrency(ctx, wallet.Balance, currency)
+		if err != nil {
+			return res, err
+		}
+		return decimal.Decimal{}, nil
+	default:
+		return wallet.Balance, nil
+	}
 }
 
-func (a *Core) UpdateBalance(ctx context.Context, money float64, userId int) error {
+func (a *Core) UpdateBalance(ctx context.Context, money decimal.Decimal, userId int) error {
 
 	err := a.repo.UpdateBalanceByUserId(ctx, money, userId)
 	if err != nil {
@@ -21,7 +33,7 @@ func (a *Core) UpdateBalance(ctx context.Context, money float64, userId int) err
 	return nil
 }
 
-func (a *Core) CreateTransaction(ctx context.Context, userId int, receiverId int, money float64) error {
+func (a *Core) CreateTransaction(ctx context.Context, userId int, receiverId int, money decimal.Decimal) error {
 	err := a.repo.CreateTransactionByUsers(ctx, userId, receiverId, money)
 	if err != nil {
 		return err
@@ -38,7 +50,7 @@ func (a *Core) CheckWallet(ctx context.Context, userId int) error {
 	return nil
 }
 
-func (a *Core) TransferWithWallet(ctx context.Context, userId int, receiverId int, money float64) error {
+func (a *Core) TransferWithWallet(ctx context.Context, userId int, receiverId int, money decimal.Decimal) error {
 
 	err := a.repo.CreateTransactionByUsers(ctx, userId, receiverId, money)
 	if err != nil {
@@ -50,7 +62,7 @@ func (a *Core) TransferWithWallet(ctx context.Context, userId int, receiverId in
 		return err
 	}
 
-	err = a.repo.UpdateBalanceByUserId(ctx, money*-1, receiverId)
+	err = a.repo.UpdateBalanceByUserId(ctx, money.Mul(decimal.NewFromInt(-1)), receiverId)
 	if err != nil {
 		return err
 	}
