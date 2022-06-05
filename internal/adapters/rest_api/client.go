@@ -1,16 +1,14 @@
 package rest_api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
-	"time"
 
 	"github.com/shopspring/decimal"
-)
-
-const (
-	timeout = time.Second * 10
 )
 
 type Client struct {
@@ -18,26 +16,6 @@ type Client struct {
 	apiKey   string
 	basePath string
 }
-
-type (
-	Response struct {
-		Date       string          `json:"date"`
-		Historical string          `json:"historical"`
-		Info       Info            `json:"info"`
-		Query      Query           `json:"query"`
-		Result     decimal.Decimal `json:"result"`
-		Success    bool            `json:"success"`
-	}
-	Query struct {
-		Amount decimal.Decimal `json:"amount"`
-		From   string          `json:"from"`
-		To     string          `json:"to"`
-	}
-	Info struct {
-		Rate      decimal.Decimal `json:"rate"`
-		Timestamp int             `json:"timestamp"`
-	}
-)
 
 func New(apikey, basePath string) *Client {
 	client := http.Client{
@@ -51,10 +29,35 @@ func New(apikey, basePath string) *Client {
 	}
 }
 
-func (c *Client) ExchangeCurrency(ctx context.Context, amount decimal.Decimal, currency string) (decimal.Decimal, error) {
-	json.Unmarshal()
-}
+func (c *Client) request(ctx context.Context, url, method string, body []byte) (decimal.Decimal, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, io.LimitReader(bytes.NewBuffer(body), 1048576))
+	if err != nil {
+		return decimal.Decimal{}, fmt.Errorf("http.NewRequestWithContext: %w", err)
+	}
 
-func (c *Client) request(ctx context.Context, amount decimal.Decimal, currency string) (decimal.Decimal, error) {
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return decimal.Decimal{}, fmt.Errorf("c.client.Do: %w", err)
+	}
 
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return decimal.Decimal{}, fmt.Errorf("io.ReadAll: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return decimal.Decimal{}, errUnknown
+	}
+
+	result := &Response{}
+	err = json.Unmarshal(respBody, result)
+	if err != nil {
+		return decimal.Decimal{}, fmt.Errorf("json.Unmarshall: %w", err)
+	}
+
+	if !result.Success {
+		return decimal.Decimal{}, fmt.Errorf("result.Success - err")
+	}
+
+	return result.Result, nil
 }

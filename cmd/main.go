@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 
@@ -21,11 +20,6 @@ import (
 	"packs/internal/api"
 	"packs/internal/app"
 	"packs/internal/config"
-)
-
-const (
-	devEnvPath = "environments/dev"
-	configName = "configs.yaml"
 )
 
 func main() {
@@ -104,8 +98,4 @@ func Run(c *config.Config) error {
 
 	return nil
 
-}
-
-func LoadConfig(string) (string, error) {
-	err := godotenv.Load()
 }

@@ -13,12 +13,14 @@ func (a *Core) CheckBalance(ctx context.Context, userId int, currency string) (d
 	}
 
 	switch {
-	case currency != "" || currency != "RUB":
+	case currency != "" && currency != "RUB":
 		res, err := a.exchange.ExchangeCurrency(ctx, wallet.Balance, currency)
 		if err != nil {
-			return res, err
+			return decimal.Decimal{}, err
 		}
-		return decimal.Decimal{}, nil
+
+		return res, nil
+
 	default:
 		return wallet.Balance, nil
 	}

@@ -42,7 +42,7 @@ func (nac Nachinka) CreateTransactionByUsers(ctx context.Context, userId int, re
 }
 
 func (nac Nachinka) GetUserTransactionsByUserId(ctx context.Context, userId int) ([]app.Transaction, error) {
-	rows, err := nac.db.QueryContext(ctx, "select * from transaction where wallet_id = (select id from wallet where user_id = $1) order by date, money", userId)
+	rows, err := nac.db.QueryContext(ctx, "select * from transaction where wallet_id = (select id from wallet where user_id = $1) OR receiver_wallet_id = (select id from wallet where user_id = $1) order by date, money", userId)
 
 	if err != nil {
 		return nil, err

@@ -15,5 +15,6 @@ db:
     dbname: postgres
     mode: disable
 # Clients
-rest_api_api_key: Aa5vJTXRCS5gXJinXKFoJUlFKCqtaSTp
-rest_api_base_path: https://api.apilayer.com/exchangerates_data
+client:
+  rest_api_api_key: UE7w7EpSQ5WwmqWiaYuiY3W9aTmkiqyX
+  rest_api_base_path: https://api.apilayer.com/exchangerates_data
