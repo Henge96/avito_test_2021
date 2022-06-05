@@ -1,9 +1,11 @@
+# Server
 server:
   host: 0.0.0.0
   port:
     http: 8080
   timeout:
     server_timeout: 30
+# Database
 db:
     driver: postgres
     user: postgres
@@ -12,3 +14,7 @@ db:
     portdb: 5432
     dbname: postgres
     mode: disable
+# Clients
+client:
+  rest_api_api_key: UE7w7EpSQ5WwmqWiaYuiY3W9aTmkiqyX
+  rest_api_base_path: https://api.apilayer.com/exchangerates_data

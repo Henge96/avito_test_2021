@@ -6,17 +6,20 @@ import (
 	"embed"
 	"flag"
 	"fmt"
-	_ "github.com/lib/pq"
-	"github.com/pressly/goose/v3"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
+
+	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
+
+	"packs/internal/adapters/repo"
+	"packs/internal/adapters/rest_api"
 	"packs/internal/api"
 	"packs/internal/app"
 	"packs/internal/config"
-	"packs/internal/repo"
-	"time"
 )
 
 func main() {
@@ -63,7 +66,9 @@ func Run(c *config.Config) error {
 	nachinka := repo.NewNachinka(db)
 	defer nachinka.StopConnect()
 
-	a := app.NewApplication(nachinka)
+	restAPiClient := rest_api.New(c.Client.APILayerAPIKey, c.Client.APILayerBasePath)
+
+	a := app.NewApplication(nachinka, restAPiClient)
 
 	server := &http.Server{
 		Addr:    c.Server.Host + ":" + c.Server.Port.Http,
@@ -71,7 +76,7 @@ func Run(c *config.Config) error {
 	}
 
 	go func() {
-		err = server.ListenAndServe()
+		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
 		} else {
 			log.Fatal(err)
