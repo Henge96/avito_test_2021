@@ -1,11 +1,11 @@
 package repo
 
-import "database/sql"
+import "github.com/jmoiron/sqlx"
 
-type Nachinka struct {
-	db *sql.DB
+type Repo struct {
+	db *sqlx.DB
 }
 
-func NewNachinka(db *sql.DB) Nachinka {
-	return Nachinka{db: db}
+func NewNachinka(db *sqlx.DB) Repo {
+	return Repo{db: db}
 }

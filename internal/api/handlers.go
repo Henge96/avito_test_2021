@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -34,29 +33,25 @@ func ErrHandler(w http.ResponseWriter, err error, code int) {
 	log.Println(err)
 }
 
-func (a *Api) PrintBalance(w http.ResponseWriter, r *http.Request) {
+func (a *Api) GetBalance(w http.ResponseWriter, r *http.Request) {
 
-	var balance app.Wallet
+	var wallet app.RequestBalance
 
-	err := json.NewDecoder(r.Body).Decode(&balance)
+	err := json.NewDecoder(r.Body).Decode(&wallet)
 	if err != nil {
 		ErrHandler(w, err, 400)
 		return
 	}
 
-	fmt.Println(balance.Money)
-
-	ReturnBalance, err := a.app.CheckBalance(r.Context(), balance.UserId, balance.Currency)
+	returnBalance, err := a.app.GetUserBalance(r.Context(), wallet.UserID, wallet.Currency)
 	if err != nil {
-		ErrHandler(w, err, 400)
+		ErrHandler(w, err, 500)
 		return
 	}
 
-	result, _ := ReturnBalance.Float64()
-
-	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: result})
+	err = json.NewEncoder(w).Encode(Response{Balance: returnBalance.StringFixed(2)})
 	if err != nil {
-		ErrHandler(w, err, 400)
+		ErrHandler(w, err, 500)
 		return
 	}
 }
@@ -108,17 +103,17 @@ func (a *Api) Transfer(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *Api) PrintTransactions(w http.ResponseWriter, r *http.Request) {
+func (a *Api) GetTransactions(w http.ResponseWriter, r *http.Request) {
 
-	var wallet app.Wallet
+	var params app.UserTransactionsParam
 
-	err := json.NewDecoder(r.Body).Decode(&wallet)
+	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		ErrHandler(w, err, 400)
 		return
 	}
 
-	res, err := a.app.GetUserTransactions(r.Context(), wallet)
+	res, err := a.app.GetUserTransactions(r.Context(), params)
 	if err != nil {
 		ErrHandler(w, err, 500)
 		return

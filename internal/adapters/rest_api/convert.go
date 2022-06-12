@@ -51,8 +51,8 @@ func (c *Client) ConvertToUrl(money decimal.Decimal, currency string) (string, e
 	param := url.Values{}
 
 	param.Add("apikey", c.apiKey)
-	param.Add("from", currency)
-	param.Add("to", defaultCurrency)
+	param.Add("from", defaultCurrency)
+	param.Add("to", currency)
 	param.Add("amount", money.String())
 
 	urlAddres.RawQuery = param.Encode()

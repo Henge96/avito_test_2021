@@ -2,28 +2,26 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/shopspring/decimal"
 )
 
-func (a *Core) CheckBalance(ctx context.Context, userId int, currency string) (decimal.Decimal, error) {
-	wallet, err := a.repo.GetWalletByUserId(ctx, userId)
+func (a *Core) GetUserBalance(ctx context.Context, userID int, currency string) (decimal.Decimal, error) {
+	wallet, err := a.repo.GetWalletByUserID(ctx, userID)
 	if err != nil {
-		return decimal.Decimal{}, err
+		return decimal.Decimal{}, fmt.Errorf("a.repo.GetWalletByUserId: %w", err)
 	}
 
-	switch {
-	case currency != "" && currency != "RUB":
-		res, err := a.exchange.ExchangeCurrency(ctx, wallet.Balance, currency)
+	if currency != "" && currency != "RUB" {
+		excBalance, err := a.exchange.ExchangeCurrency(ctx, wallet.Balance, currency)
 		if err != nil {
-			return decimal.Decimal{}, err
+			return decimal.Decimal{}, fmt.Errorf("a.exchange.ExchangeCurrency: %w", err)
 		}
-
-		return res, nil
-
-	default:
-		return wallet.Balance, nil
+		return excBalance, nil
 	}
+
+	return wallet.Balance, nil
 }
 
 func (a *Core) UpdateBalance(ctx context.Context, money decimal.Decimal, userId int) error {
@@ -73,9 +71,9 @@ func (a *Core) TransferWithWallet(ctx context.Context, userId int, receiverId in
 
 }
 
-func (a *Core) GetUserTransactions(ctx context.Context, wallet Wallet) ([]Transaction, error) {
+func (a *Core) GetUserTransactions(ctx context.Context, params UserTransactionsParam) ([]Transaction, error) {
 
-	return a.repo.GetUserTransactionsByUserId(ctx, wallet.UserId)
+	return a.repo.GetUserTransactionsByParams(ctx, params)
 }
 
 func (a *Core) CreateWallet(ctx context.Context, userId int) error {
