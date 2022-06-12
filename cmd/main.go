@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"database/sql"
+	_ "database/sql"
 	"embed"
 	"flag"
 	"fmt"
@@ -46,7 +46,7 @@ var embedMigrations embed.FS
 
 func Run(c *config.Config) error {
 
-	db, err := sql.Open(c.Db.Driver, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s host=%s port=%s", c.Db.User,
+	db, err := sqlx.Open(c.Db.Driver, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s host=%s port=%s", c.Db.User,
 		c.Db.Password, c.Db.Dbname, c.Db.Mode, c.Db.HostDb, c.Db.PortDb))
 	defer db.Close()
 	if err != nil {

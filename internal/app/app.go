@@ -8,10 +8,10 @@ import (
 
 type (
 	Repo interface {
-		GetWalletByUserId(ctx context.Context, i int) (*Wallet, error)
+		GetWalletByUserID(ctx context.Context, i int) (*Wallet, error)
 		UpdateBalanceByUserId(ctx context.Context, money decimal.Decimal, userId int) error
 		CreateTransactionByUsers(ctx context.Context, userId int, receiverId int, money decimal.Decimal) error
-		GetUserTransactionsByUserId(ctx context.Context, userId int) ([]Transaction, error)
+		GetUserTransactionsByParams(ctx context.Context, params UserTransactionsParam) ([]TransactionsLists, int, error)
 		CreateWalletByUserId(ctx context.Context, UserId int) error
 	}
 	ExchangeClient interface {

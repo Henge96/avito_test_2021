@@ -1,5 +1,5 @@
 package api
 
-type CheckBalanceResp struct {
-	RetBalance float64 `json:"retbalance"`
+type Response struct {
+	Balance string `json:"balance"`
 }
