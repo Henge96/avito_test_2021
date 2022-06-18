@@ -17,7 +17,7 @@ type Server struct {
 type Db struct {
 	Driver   string `yaml:"driver"`
 	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+	Password string
 	HostDb   string `yaml:"hostdb"`
 	PortDb   string `yaml:"portdb"`
 	Dbname   string `yaml:"dbname"`
@@ -25,7 +25,7 @@ type Db struct {
 }
 
 type Client struct {
-	APILayerAPIKey   string `yaml:"rest_api_api_key"`
+	APILayerAPIKey   string
 	APILayerBasePath string `yaml:"rest_api_base_path"`
 }
 

@@ -6,6 +6,6 @@ type Repo struct {
 	db *sqlx.DB
 }
 
-func NewNachinka(db *sqlx.DB) Repo {
+func New(db *sqlx.DB) Repo {
 	return Repo{db: db}
 }

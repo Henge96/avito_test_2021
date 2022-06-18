@@ -3,79 +3,75 @@ package app
 import (
 	"context"
 	"fmt"
-
 	"github.com/shopspring/decimal"
 )
 
-func (a *Core) GetUserBalance(ctx context.Context, userID int, currency string) (decimal.Decimal, error) {
-	wallet, err := a.repo.GetWalletByUserID(ctx, userID)
+func (a *Core) GetUserBalance(ctx context.Context, userID uint, currency string) (Wallet, error) {
+	wallet, err := a.repo.GetWallet(ctx, userID)
 	if err != nil {
-		return decimal.Decimal{}, fmt.Errorf("a.repo.GetWalletByUserId: %w", err)
+		return Wallet{}, fmt.Errorf("a.repo.GetWalletByUserId: %w", err)
 	}
 
-	if currency != "" && currency != "RUB" {
+	if currency != "RUB" {
 		excBalance, err := a.exchange.ExchangeCurrency(ctx, wallet.Balance, currency)
 		if err != nil {
-			return decimal.Decimal{}, fmt.Errorf("a.exchange.ExchangeCurrency: %w", err)
+			return Wallet{}, fmt.Errorf("a.exchange.ExchangeCurrency: %w", err)
 		}
-		return excBalance, nil
+		wallet.Balance = excBalance
 	}
 
-	return wallet.Balance, nil
+	return wallet, nil
 }
 
-func (a *Core) UpdateBalance(ctx context.Context, money decimal.Decimal, userId int) error {
-
-	err := a.repo.UpdateBalanceByUserId(ctx, money, userId)
-	if err != nil {
-		return err
+func (a *Core) ChangeBalance(ctx context.Context, change ChangeBalance) (Wallet, error) {
+	wallet, err := a.repo.GetWallet(ctx, change.UserID)
+	if err != nil && err != ErrNotFound {
+		return Wallet{}, fmt.Errorf("a.repo.GetWallet: %w", err)
 	}
-	return nil
+
+	if err == ErrNotFound && change.Amount.GreaterThanOrEqual(decimal.NewFromInt(0)) {
+		newWallet, err := a.repo.CreateWallet(ctx, change.UserID)
+		if err != nil {
+			return Wallet{}, fmt.Errorf("a.repo.CreateWallet: %w", err)
+		}
+		wallet.ID = newWallet.ID
+	}
+
+	wallet, err = a.repo.Change(ctx, wallet.ID, change.Amount, stReplenishment)
+	if err != nil {
+		return Wallet{}, fmt.Errorf("a.repo.Change: %w", err)
+	}
+
+	return wallet, nil
 }
 
-func (a *Core) CreateTransaction(ctx context.Context, userId int, receiverId int, money decimal.Decimal) error {
-	err := a.repo.CreateTransactionByUsers(ctx, userId, receiverId, money)
+func (a *Core) Transfer(ctx context.Context, transfer TransferBetweenUsers) (TransactionsLists, error) {
+
+	senderWallet, err := a.repo.GetWallet(ctx, transfer.SenderID)
 	if err != nil {
-		return err
+		return TransactionsLists{}, fmt.Errorf("a.repo.GetWalletByUser: %w", err)
 	}
-	return nil
+
+	receiverWallet, err := a.repo.GetWallet(ctx, transfer.ReceiverID)
+	if err != nil && err != ErrNotFound {
+		return TransactionsLists{}, fmt.Errorf("a.repo.GetWalletByUser: %w", err)
+	}
+
+	if err == ErrNotFound {
+		receiverWallet, err = a.repo.CreateWallet(ctx, transfer.ReceiverID)
+		if err != nil {
+			return TransactionsLists{}, fmt.Errorf("a.repo.CreateWallet: %w", err)
+		}
+	}
+
+	transaction, err := a.repo.TransactionBetweenUsers(ctx, senderWallet, receiverWallet, transfer.Amount, stTransfer)
+	if err != nil {
+		return TransactionsLists{}, fmt.Errorf("a.repo.Transaction: %w", err)
+	}
+
+	return transaction, nil
 }
 
-func (a *Core) CheckWallet(ctx context.Context, userId int) error {
-	_, err := a.repo.GetWalletByUserId(ctx, userId)
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *Core) TransferWithWallet(ctx context.Context, userId int, receiverId int, money decimal.Decimal) error {
-
-	err := a.repo.CreateTransactionByUsers(ctx, userId, receiverId, money)
-	if err != nil {
-		return err
-	}
-
-	err = a.repo.UpdateBalanceByUserId(ctx, money, userId)
-	if err != nil {
-		return err
-	}
-
-	err = a.repo.UpdateBalanceByUserId(ctx, money.Mul(decimal.NewFromInt(-1)), receiverId)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
-}
-
-func (a *Core) GetUserTransactions(ctx context.Context, params UserTransactionsParam) ([]Transaction, error) {
-
+func (a *Core) GetUserTransactions(ctx context.Context, params UserTransactionsParam) ([]TransactionsLists, int, error) {
 	return a.repo.GetUserTransactionsByParams(ctx, params)
-}
-
-func (a *Core) CreateWallet(ctx context.Context, userId int) error {
-	return a.repo.CreateWalletByUserId(ctx, userId)
 }

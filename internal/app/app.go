@@ -8,11 +8,11 @@ import (
 
 type (
 	Repo interface {
-		GetWalletByUserID(ctx context.Context, i int) (*Wallet, error)
-		UpdateBalanceByUserId(ctx context.Context, money decimal.Decimal, userId int) error
-		CreateTransactionByUsers(ctx context.Context, userId int, receiverId int, money decimal.Decimal) error
+		GetWallet(ctx context.Context, i uint) (Wallet, error)
+		Change(ctx context.Context, walletID uint, amount decimal.Decimal, status string) (Wallet, error)
+		TransactionBetweenUsers(ctx context.Context, senderWallet, receiverWallet Wallet, money decimal.Decimal, status string) (transaction TransactionsLists, err error)
 		GetUserTransactionsByParams(ctx context.Context, params UserTransactionsParam) ([]TransactionsLists, int, error)
-		CreateWalletByUserId(ctx context.Context, UserId int) error
+		CreateWallet(ctx context.Context, userID uint) (Wallet, error)
 	}
 	ExchangeClient interface {
 		ExchangeCurrency(ctx context.Context, sum decimal.Decimal, ticker string) (decimal.Decimal, error)

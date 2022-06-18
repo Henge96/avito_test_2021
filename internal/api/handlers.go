@@ -1,15 +1,13 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
+	"fmt"
+	"github.com/go-playground/validator/v10"
 	"log"
 	"net/http"
-
-	"github.com/shopspring/decimal"
-
 	"packs/internal/app"
+	"strings"
 )
 
 func MwHandler1(next http.Handler) http.Handler {
@@ -34,7 +32,6 @@ func ErrHandler(w http.ResponseWriter, err error, code int) {
 }
 
 func (a *Api) GetBalance(w http.ResponseWriter, r *http.Request) {
-
 	var wallet app.RequestBalance
 
 	err := json.NewDecoder(r.Body).Decode(&wallet)
@@ -43,62 +40,58 @@ func (a *Api) GetBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnBalance, err := a.app.GetUserBalance(r.Context(), wallet.UserID, wallet.Currency)
+	if wallet.Currency == "" {
+		wallet.Currency = "RUB"
+	}
+
+	err = validateStruct(wallet)
+	if err != nil {
+		ErrHandler(w, app.ErrInvalidArgument, 400)
+		return
+	}
+
+	returnBalance, err := a.app.GetUserBalance(r.Context(), wallet.UserID, strings.ToUpper(wallet.Currency))
 	if err != nil {
 		ErrHandler(w, err, 500)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(Response{Balance: returnBalance.StringFixed(2)})
+	err = json.NewEncoder(w).Encode(app.Wallet{
+		ID:      returnBalance.ID,
+		UserID:  returnBalance.UserID,
+		Balance: returnBalance.Balance,
+	})
 	if err != nil {
 		ErrHandler(w, err, 500)
 		return
 	}
 }
 
-func (a *Api) Transfer(w http.ResponseWriter, r *http.Request) {
+func (a *Api) TransferBetweenWallets(w http.ResponseWriter, r *http.Request) {
 
-	var wallet app.Wallet
+	var transfer app.TransferBetweenUsers
 
-	err := json.NewDecoder(r.Body).Decode(&wallet)
+	err := json.NewDecoder(r.Body).Decode(&transfer)
 	if err != nil {
 		ErrHandler(w, err, 400)
 		return
 	}
 
-	if wallet.Money.IsNegative() || wallet.ReceiverId == wallet.UserId {
-		ErrHandler(w, err, 400)
-		return
-	}
-
-	err = a.app.CheckWallet(r.Context(), wallet.UserId)
+	err = validateStruct(transfer)
 	if err != nil {
-		ErrHandler(w, err, 400)
+		ErrHandler(w, app.ErrInvalidArgument, 400)
 		return
 	}
 
-	err = a.app.CheckWallet(r.Context(), wallet.ReceiverId)
-	if err != nil {
-		ErrHandler(w, err, 400)
-		return
-	}
-
-	err = a.app.TransferWithWallet(r.Context(), wallet.UserId, wallet.ReceiverId, wallet.Money)
+	transaction, err := a.app.Transfer(r.Context(), transfer)
 	if err != nil {
 		ErrHandler(w, err, 500)
 		return
 	}
 
-	ReturnBalance, err := a.app.CheckBalance(r.Context(), wallet.UserId, wallet.Currency)
+	err = json.NewEncoder(w).Encode(transaction)
 	if err != nil {
 		ErrHandler(w, err, 500)
-		return
-	}
-	result, _ := ReturnBalance.Float64()
-
-	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: result})
-	if err != nil {
-		ErrHandler(w, err, 400)
 		return
 	}
 }
@@ -113,23 +106,28 @@ func (a *Api) GetTransactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := a.app.GetUserTransactions(r.Context(), params)
+	err = validateStruct(params)
+	if err != nil {
+		ErrHandler(w, app.ErrInvalidArgument, 400)
+		return
+	}
+
+	res, total, err := a.app.GetUserTransactions(r.Context(), params)
 	if err != nil {
 		ErrHandler(w, err, 500)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(res)
+	err = json.NewEncoder(w).Encode(ResponseTransactions{Response: res, Total: total})
 	if err != nil {
-		ErrHandler(w, err, 400)
+		ErrHandler(w, err, 500)
 		return
 	}
-
 }
 
-func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
+func (a *Api) ChangeUserBalance(w http.ResponseWriter, r *http.Request) {
 
-	var wallet app.Wallet
+	var wallet app.ChangeBalance
 
 	err := json.NewDecoder(r.Body).Decode(&wallet)
 	if err != nil {
@@ -137,71 +135,31 @@ func (a *Api) DepositOrWithdrow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wallet.ReceiverId = wallet.UserId
-
-	if wallet.Money.IsZero() {
+	err = validateStruct(wallet)
+	if err != nil {
 		ErrHandler(w, err, 400)
 		return
-	} else if wallet.Money.IsPositive() {
-
-		err = a.app.CheckWallet(r.Context(), wallet.UserId)
-		if err != nil && false == errors.Is(err, sql.ErrNoRows) {
-			ErrHandler(w, err, 400)
-			return
-		} else if true == errors.Is(err, sql.ErrNoRows) {
-			err = a.app.CreateWallet(r.Context(), wallet.UserId)
-			if err != nil {
-				ErrHandler(w, err, 500)
-				return
-			}
-
-		}
-
-		err = a.app.UpdateBalance(r.Context(), wallet.Money.Mul(decimal.NewFromInt(-1)), wallet.UserId)
-		if err != nil {
-			ErrHandler(w, err, 500)
-			return
-		}
-
-		err = a.app.CreateTransaction(r.Context(), wallet.UserId, wallet.ReceiverId, wallet.Money)
-		if err != nil {
-			ErrHandler(w, err, 500)
-			return
-		}
-
-	} else if wallet.Money.IsNegative() {
-
-		err = a.app.CheckWallet(r.Context(), wallet.UserId)
-		if err != nil {
-			ErrHandler(w, err, 400)
-			return
-		}
-
-		err = a.app.UpdateBalance(r.Context(), wallet.Money.Mul(decimal.NewFromInt(-1)), wallet.UserId)
-		if err != nil {
-			ErrHandler(w, err, 500)
-			return
-		}
-
-		err = a.app.CreateTransaction(r.Context(), wallet.UserId, wallet.ReceiverId, wallet.Money.Mul(decimal.NewFromInt(-1)))
-		if err != nil {
-			ErrHandler(w, err, 500)
-			return
-		}
-
 	}
 
-	ReturnBalance, err := a.app.CheckBalance(r.Context(), wallet.UserId, wallet.Currency)
+	transaction, err := a.app.ChangeBalance(r.Context(), wallet)
 	if err != nil {
 		ErrHandler(w, err, 500)
 		return
 	}
-	result, _ := ReturnBalance.Float64()
 
-	err = json.NewEncoder(w).Encode(CheckBalanceResp{RetBalance: result})
+	err = json.NewEncoder(w).Encode(ResponseBalance{Balance: transaction.Balance.StringFixedBank(2)})
 	if err != nil {
-		ErrHandler(w, err, 400)
+		ErrHandler(w, err, 500)
 		return
 	}
+}
 
+func validateStruct(object interface{}) error {
+	validate := validator.New()
+	err := validate.Struct(object)
+	if err != nil {
+		return fmt.Errorf("validate.Struct: %w", err)
+	}
+
+	return nil
 }

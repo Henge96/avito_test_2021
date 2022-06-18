@@ -6,33 +6,46 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type RequestBalance struct {
-	UserID   int    `json:"user_id"`
-	Currency string `json:"currency"`
-}
+const (
+	stReplenishment = "replenishment"
+	stTransfer      = "transfer"
+)
 
-type Wallet struct {
-	ID      int
-	UserID  int
-	Balance decimal.Decimal
-}
+type (
+	RequestBalance struct {
+		UserID   uint   `json:"user_id" validate:"required"`
+		Currency string `json:"currency" validate:"required,len=3,alpha"`
+	}
 
-type TransferBetweenUsers struct {
-	SenderID   int `json:"sender_id"`
-	ReceiverID int `json:"receiver_id"`
-	Amount     int `json:"amount"`
-}
+	ChangeBalance struct {
+		UserID uint            `json:"user_id" validate:"required"`
+		Amount decimal.Decimal `json:"amount" validate:"required"`
+	}
 
-type TransactionsLists struct {
-	ID         int             `json:"id"`
-	FromWallet int             `json:"from_wallet"`
-	ToWallet   int             `json:"to_wallet"`
-	Amount     decimal.Decimal `json:"amount"`
-	CreatedAt  time.Time       `json:"created_at"`
-}
+	Wallet struct {
+		ID      uint
+		UserID  int
+		Balance decimal.Decimal
+	}
 
-type UserTransactionsParam struct {
-	UserID int
-	Limit  uint
-	Offset uint
-}
+	TransferBetweenUsers struct {
+		SenderID   uint            `json:"sender_id" validate:"required"`
+		ReceiverID uint            `json:"receiver_id" validate:"required"`
+		Amount     decimal.Decimal `json:"amount" validate:"required,gt=0"`
+	}
+
+	TransactionsLists struct {
+		ID         uint            `json:"id"`
+		FromWallet uint            `json:"from_wallet"`
+		ToWallet   uint            `json:"to_wallet"`
+		Amount     decimal.Decimal `json:"amount"`
+		CreatedAt  time.Time       `json:"created_at"`
+		Status     string          `json:"status"`
+	}
+
+	UserTransactionsParam struct {
+		UserID uint `json:"user_id" validate:"required"`
+		Limit  uint `json:"limit" validate:"required"`
+		Offset uint `json:"offset"`
+	}
+)

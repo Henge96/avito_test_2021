@@ -39,10 +39,6 @@ func TakeConfigFromYaml(s string) (*Config, error) {
 		config.Db.User = "postgres"
 	}
 
-	if config.Db.Password == "" {
-		config.Db.Password = "postgres"
-	}
-
 	if config.Db.HostDb == "" {
 		config.Db.HostDb = "localhost"
 	}
