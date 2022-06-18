@@ -1,18 +1,20 @@
 -- +goose Up
 -- +goose StatementBegin
+create type status as enum ('replenishment', 'transfer');
 create table wallet
 (
     id      serial primary key,
-    user_id integer unique not null,
-    balance decimal check (balance >= 0.0) not null
+    user_id integer unique               not null,
+    balance decimal check (balance >= 0) not null default 0
 );
 create table transaction
 (
-    id                 serial primary key,
-    wallet_id          integer references wallet (id),
-    receiver_wallet_id integer   not null,
-    money              decimal check not null,
-    date               timestamp not null default now()
+    id          serial primary key,
+    sender_id   integer                    not null,
+    receiver_id integer                    not null,
+    amount      decimal check (amount > 0) not null,
+    created_at  timestamp                  not null default now(),
+    status      status                     not null
 );
 -- +goose StatementEnd
 

@@ -9,12 +9,10 @@ server:
 db:
     driver: postgres
     user: postgres
-    password: postgres
     hostdb: postgres
     portdb: 5432
     dbname: postgres
     mode: disable
 # Clients
 client:
-  rest_api_api_key: UE7w7EpSQ5WwmqWiaYuiY3W9aTmkiqyX
   rest_api_base_path: https://api.apilayer.com/exchangerates_data

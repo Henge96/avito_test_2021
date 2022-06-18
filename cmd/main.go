@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	_ "database/sql"
-	"embed"
 	"flag"
 	"fmt"
+	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
-	"github.com/pressly/goose/v3"
 
 	"packs/internal/adapters/repo"
 	"packs/internal/adapters/rest_api"
@@ -29,6 +28,11 @@ func main() {
 
 	flag.Parse()
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("can`t loading env")
+	}
+
 	configStruct, err := config.TakeConfigFromYaml(configPath)
 	if err != nil {
 		log.Fatal(err)
@@ -41,34 +45,21 @@ func main() {
 
 }
 
-//go:embed migrate/*.sql
-var embedMigrations embed.FS
-
 func Run(c *config.Config) error {
 
 	db, err := sqlx.Open(c.Db.Driver, fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s host=%s port=%s", c.Db.User,
-		c.Db.Password, c.Db.Dbname, c.Db.Mode, c.Db.HostDb, c.Db.PortDb))
-	defer db.Close()
+		os.Getenv("PASSWORD_DB"), c.Db.Dbname, c.Db.Mode, c.Db.HostDb, c.Db.PortDb))
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("sqlx.Open: %w", err)
 	}
+	defer db.Close()
 
-	goose.SetBaseFS(embedMigrations)
+	repo := repo.New(db)
+	defer repo.StopConnect()
 
-	if err := goose.SetDialect("postgres"); err != nil {
-		panic(err)
-	}
+	restAPiClient := rest_api.New(os.Getenv("REST_API_API_KEY"), c.Client.APILayerBasePath)
 
-	if err := goose.Up(db, "migrate"); err != nil {
-		panic(err)
-	}
-
-	nachinka := repo.NewNachinka(db)
-	defer nachinka.StopConnect()
-
-	restAPiClient := rest_api.New(c.Client.APILayerAPIKey, c.Client.APILayerBasePath)
-
-	a := app.NewApplication(nachinka, restAPiClient)
+	a := app.NewApplication(repo, restAPiClient)
 
 	server := &http.Server{
 		Addr:    c.Server.Host + ":" + c.Server.Port.Http,
@@ -97,5 +88,4 @@ func Run(c *config.Config) error {
 	}
 
 	return nil
-
 }
