@@ -43,20 +43,20 @@ func (r Repo) Change(ctx context.Context, walletID uint, amount decimal.Decimal,
 	var wallet app.Wallet
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return app.Wallet{}, fmt.Errorf("r.db.BeginTx: %w", err)
+		return app.Wallet{}, convertErr(err)
 	}
 
 	queryTransaction := fmt.Sprintf("insert into %s (sender_id, receiver_id, amount, status) values ($1, $1, $2, $3)", tableTransaction)
 	row, err := tx.ExecContext(ctx, queryTransaction, walletID, amount, status)
 	if err != nil {
 		tx.Rollback()
-		return app.Wallet{}, fmt.Errorf("tx.ExecContext: %w", err)
+		return app.Wallet{}, convertErr(err)
 	}
 
 	total, err := row.RowsAffected()
 	if err != nil {
 		tx.Rollback()
-		return app.Wallet{}, fmt.Errorf("row.Rows.Affected: %w", err)
+		return app.Wallet{}, convertErr(err)
 	}
 
 	if total != 1 {
@@ -68,7 +68,7 @@ func (r Repo) Change(ctx context.Context, walletID uint, amount decimal.Decimal,
 	err = tx.QueryRowContext(ctx, query, amount, walletID).Scan(&wallet.ID, &wallet.UserID, &wallet.Balance)
 	if err != nil {
 		tx.Rollback()
-		return app.Wallet{}, fmt.Errorf("tx.ExecContext: %w", convertErr(err))
+		return app.Wallet{}, convertErr(err)
 	}
 
 	err = tx.Commit()
@@ -84,20 +84,20 @@ func (r Repo) TransactionBetweenUsers(ctx context.Context, senderWallet, receive
 	var transaction app.TransactionsLists
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return app.TransactionsLists{}, fmt.Errorf("r.db.BeginTx: %w", err)
+		return app.TransactionsLists{}, convertErr(err)
 	}
 
 	querySender := fmt.Sprintf("update %s set balance = balance-$1 where id = $2", tableWallet)
 	rowsUP, err := tx.ExecContext(ctx, querySender, amount, senderWallet.ID)
 	if err != nil {
 		tx.Rollback()
-		return app.TransactionsLists{}, fmt.Errorf("tx.ExecContext: %w", err)
+		return app.TransactionsLists{}, convertErr(err)
 	}
 
 	rowsSender, err := rowsUP.RowsAffected()
 	if err != nil {
 		tx.Rollback()
-		return app.TransactionsLists{}, fmt.Errorf("Sender.Rows.Affected: %w", err)
+		return app.TransactionsLists{}, convertErr(err)
 	}
 
 	if rowsSender != 1 {
@@ -109,7 +109,7 @@ func (r Repo) TransactionBetweenUsers(ctx context.Context, senderWallet, receive
 	rowsDown, err := tx.ExecContext(ctx, queryReceiver, amount, receiverWallet.ID)
 	if err != nil {
 		tx.Rollback()
-		return app.TransactionsLists{}, fmt.Errorf("tx.ExecContext: %w", err)
+		return app.TransactionsLists{}, convertErr(err)
 	}
 
 	rowsReceiver, err := rowsDown.RowsAffected()

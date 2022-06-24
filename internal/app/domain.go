@@ -19,19 +19,19 @@ type (
 
 	ChangeBalance struct {
 		UserID uint            `json:"user_id" validate:"required"`
-		Amount decimal.Decimal `json:"amount" validate:"required"`
+		Amount decimal.Decimal `json:"amount" validate:"required"` //TODO: validate this struct
 	}
 
 	Wallet struct {
 		ID      uint
-		UserID  int
+		UserID  uint
 		Balance decimal.Decimal
 	}
 
 	TransferBetweenUsers struct {
 		SenderID   uint            `json:"sender_id" validate:"required"`
 		ReceiverID uint            `json:"receiver_id" validate:"required"`
-		Amount     decimal.Decimal `json:"amount" validate:"required,gt=0"`
+		Amount     decimal.Decimal `json:"amount" validate:"required"` //TODO: validate this struct
 	}
 
 	TransactionsLists struct {

@@ -39,6 +39,7 @@ func (c *Client) request(ctx context.Context, url, method string, body []byte) (
 	if err != nil {
 		return decimal.Decimal{}, fmt.Errorf("c.client.Do: %w", err)
 	}
+	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

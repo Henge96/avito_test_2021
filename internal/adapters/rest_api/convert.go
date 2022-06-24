@@ -58,5 +58,4 @@ func (c *Client) ConvertToUrl(money decimal.Decimal, currency string) (string, e
 	urlAddres.RawQuery = param.Encode()
 
 	return urlAddres.String(), nil
-
 }

@@ -10,11 +10,11 @@ create table wallet
 create table transaction
 (
     id          serial primary key,
-    sender_id   integer                    not null,
-    receiver_id integer                    not null,
-    amount      decimal check (amount > 0) not null,
-    created_at  timestamp                  not null default now(),
-    status      status                     not null
+    sender_id   integer   not null,
+    receiver_id integer   not null,
+    amount      decimal   not null,
+    created_at  timestamp not null default now(),
+    status      status    not null
 );
 -- +goose StatementEnd
 

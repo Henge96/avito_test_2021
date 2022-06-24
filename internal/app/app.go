@@ -24,6 +24,6 @@ type Core struct {
 	exchange ExchangeClient
 }
 
-func NewApplication(repo Repo, exchange ExchangeClient) *Core {
+func New(repo Repo, exchange ExchangeClient) *Core {
 	return &Core{repo: repo, exchange: exchange}
 }

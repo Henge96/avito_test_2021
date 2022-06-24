@@ -42,7 +42,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func Run(c *config.Config) error {
@@ -59,7 +58,7 @@ func Run(c *config.Config) error {
 
 	restAPiClient := rest_api.New(os.Getenv("REST_API_API_KEY"), c.Client.APILayerBasePath)
 
-	a := app.NewApplication(repo, restAPiClient)
+	a := app.New(repo, restAPiClient)
 
 	server := &http.Server{
 		Addr:    c.Server.Host + ":" + c.Server.Port.Http,
