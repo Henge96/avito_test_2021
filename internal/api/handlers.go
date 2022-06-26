@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"github.com/shopspring/decimal"
 	"log"
 	"net/http"
 	"packs/internal/app"
@@ -83,6 +84,11 @@ func (a *Api) TransferBetweenWallets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !transfer.Amount.GreaterThan(decimal.NewFromInt(0)) {
+		ErrHandler(w, app.ErrInvalidArgument, 400)
+		return
+	}
+
 	transaction, err := a.app.Transfer(r.Context(), transfer)
 	if err != nil {
 		ErrHandler(w, err, 500)
@@ -138,6 +144,11 @@ func (a *Api) ChangeUserBalance(w http.ResponseWriter, r *http.Request) {
 	err = validateStruct(wallet)
 	if err != nil {
 		ErrHandler(w, err, 400)
+		return
+	}
+
+	if !wallet.Amount.GreaterThan(decimal.NewFromInt(0)) {
+		ErrHandler(w, app.ErrInvalidArgument, 400)
 		return
 	}
 

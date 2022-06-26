@@ -8,9 +8,9 @@ import (
 )
 
 type Application interface {
-	GetUserBalance(ctx context.Context, userId uint, currency string) (app.Wallet, error)
-	ChangeBalance(ctx context.Context, change app.ChangeBalance) (app.Wallet, error)
-	Transfer(ctx context.Context, transfer app.TransferBetweenUsers) (app.TransactionsLists, error)
+	GetUserBalance(ctx context.Context, userId uint, currency string) (*app.Wallet, error)
+	ChangeBalance(ctx context.Context, change app.ChangeBalance) (*app.Wallet, error)
+	Transfer(ctx context.Context, transfer app.TransferBetweenUsers) (*app.TransactionsLists, error)
 	GetUserTransactions(ctx context.Context, params app.UserTransactionsParam) ([]app.TransactionsLists, int, error)
 }
 
