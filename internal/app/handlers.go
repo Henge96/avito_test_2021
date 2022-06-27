@@ -29,7 +29,7 @@ func (a *Core) ChangeBalance(ctx context.Context, change ChangeBalance) (*Wallet
 		return nil, fmt.Errorf("a.repo.GetWallet: %w", err)
 	}
 
-	if err == ErrNotFound && change.Amount.GreaterThanOrEqual(decimal.NewFromInt(0)) {
+	if err == ErrNotFound && change.Amount.GreaterThan(decimal.NewFromInt(0)) {
 		newWallet, err := a.repo.CreateWallet(ctx, change.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("a.repo.CreateWallet: %w", err)

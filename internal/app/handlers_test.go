@@ -22,14 +22,14 @@ func TestCore_GetUserBalance(t *testing.T) {
 	testCases := map[string]struct {
 		userID      uint
 		currency    string
-		repoRes     app.Wallet
+		repoRes     *app.Wallet
 		repoErr     error
 		exchangeRes decimal.Decimal
 		exchangeErr error
-		want        app.Wallet
+		want        *app.Wallet
 		wantErr     error
 	}{
-		"successRUB": {wallet.UserID, "RUB", wallet, nil, decimal.Decimal{}, nil, wallet, nil},
+		"successRUB": {wallet.UserID, "RUB", &wallet, nil, decimal.Decimal{}, nil, &wallet, nil},
 	}
 
 	for name, tc := range testCases {
@@ -39,6 +39,11 @@ func TestCore_GetUserBalance(t *testing.T) {
 			t.Parallel()
 
 			ctx, c, mock, assert := start(t)
+
+			if tc.currency != "RUB" {
+				mock.exchange.EXPECT().ExchangeCurrency(gomock.Any(), tc.repoRes.Balance, tc.currency).Return(tc.exchangeRes, tc.exchangeErr)
+				tc.repoRes.Balance = tc.exchangeRes
+			}
 
 			mock.repo.EXPECT().GetWallet(gomock.Any(), tc.userID).Return(tc.repoRes, tc.repoErr)
 
