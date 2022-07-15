@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -29,7 +30,7 @@ func (a *Core) ChangeBalance(ctx context.Context, change ChangeBalance) (*Wallet
 		return nil, fmt.Errorf("a.repo.GetWallet: %w", err)
 	}
 
-	if err == ErrNotFound && change.Amount.GreaterThan(decimal.NewFromInt(0)) {
+	if err == ErrNotFound {
 		newWallet, err := a.repo.CreateWallet(ctx, change.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("a.repo.CreateWallet: %w", err)
@@ -37,7 +38,7 @@ func (a *Core) ChangeBalance(ctx context.Context, change ChangeBalance) (*Wallet
 		wallet.ID = newWallet.ID
 	}
 
-	wallet, err = a.repo.Change(ctx, wallet.ID, change.Amount, stReplenishment)
+	wallet, err = a.repo.Change(ctx, wallet.ID, change.Amount)
 	if err != nil {
 		return nil, fmt.Errorf("a.repo.Change: %w", err)
 	}
@@ -45,7 +46,7 @@ func (a *Core) ChangeBalance(ctx context.Context, change ChangeBalance) (*Wallet
 	return wallet, nil
 }
 
-func (a *Core) Transfer(ctx context.Context, transfer TransferBetweenUsers) (*TransactionsLists, error) {
+func (a *Core) Transfer(ctx context.Context, transfer Transaction) (transaction *TransactionsLists, err error) {
 
 	senderWallet, err := a.repo.GetWallet(ctx, transfer.SenderID)
 	if err != nil {
@@ -64,15 +65,33 @@ func (a *Core) Transfer(ctx context.Context, transfer TransferBetweenUsers) (*Tr
 		}
 	}
 
-	tr := TransferBetweenUsers{
+	tr := Transaction{
 		SenderID:   senderWallet.UserID,
 		Amount:     transfer.Amount,
 		ReceiverID: receiverWallet.UserID,
+		Status:     stTransfer,
 	}
 
-	transaction, err := a.repo.TransactionBetweenUsers(ctx, tr, stTransfer)
+	err = a.repo.Tx(ctx, func(repo Repo) error {
+		_, err = repo.Change(ctx, senderWallet.ID, transfer.Amount.Mul(decimal.NewFromInt(-1)))
+		if err != nil {
+			return fmt.Errorf("a.repo.TransactionBetweenUsers: %w", err)
+		}
+
+		_, err = repo.Change(ctx, receiverWallet.ID, transfer.Amount)
+		if err != nil {
+			return fmt.Errorf("a.repo.TransactionBetweenUsers: %w", err)
+		}
+
+		transaction, err = repo.Transaction(ctx, tr)
+		if err != nil {
+			return fmt.Errorf("repo.Transaction: %w", err)
+		}
+
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("a.repo.TransactionBetweenUsers: %w", err)
+		return nil, err
 	}
 
 	return transaction, nil

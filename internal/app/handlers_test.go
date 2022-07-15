@@ -1,12 +1,14 @@
 package app_test
 
 import (
-	"github.com/golang/mock/gomock"
-	"github.com/shopspring/decimal"
 	"math/rand"
-	"packs/internal/app"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/shopspring/decimal"
+
+	"packs/internal/app"
 )
 
 func TestCore_GetUserBalance(t *testing.T) {
@@ -19,6 +21,13 @@ func TestCore_GetUserBalance(t *testing.T) {
 		Balance: decimal.NewFromInt(100),
 	}
 
+	walletUSD := app.Wallet{
+		ID:      uint(rand.Uint32()),
+		UserID:  uint(rand.Uint64()),
+		Balance: decimal.NewFromInt(500),
+	}
+	exchangeRes := walletUSD.Balance.Div(decimal.NewFromInt(100))
+
 	testCases := map[string]struct {
 		userID      uint
 		currency    string
@@ -30,6 +39,7 @@ func TestCore_GetUserBalance(t *testing.T) {
 		wantErr     error
 	}{
 		"successRUB": {wallet.UserID, "RUB", &wallet, nil, decimal.Decimal{}, nil, &wallet, nil},
+		"successUSD": {walletUSD.UserID, "USD", &walletUSD, nil, exchangeRes, nil, &app.Wallet{ID: walletUSD.ID, UserID: walletUSD.UserID, Balance: exchangeRes}, nil},
 	}
 
 	for name, tc := range testCases {
@@ -40,12 +50,13 @@ func TestCore_GetUserBalance(t *testing.T) {
 
 			ctx, c, mock, assert := start(t)
 
-			if tc.currency != "RUB" {
-				mock.exchange.EXPECT().ExchangeCurrency(gomock.Any(), tc.repoRes.Balance, tc.currency).Return(tc.exchangeRes, tc.exchangeErr)
-				tc.repoRes.Balance = tc.exchangeRes
-			}
-
 			mock.repo.EXPECT().GetWallet(gomock.Any(), tc.userID).Return(tc.repoRes, tc.repoErr)
+
+			if tc.currency != "RUB" {
+				tc.repoRes.Balance = tc.exchangeRes
+
+				mock.exchange.EXPECT().ExchangeCurrency(gomock.Any(), tc.repoRes.Balance, tc.currency).Return(tc.exchangeRes, tc.exchangeErr)
+			}
 
 			res, err := c.GetUserBalance(ctx, tc.userID, tc.currency)
 			assert.ErrorIs(err, tc.wantErr)

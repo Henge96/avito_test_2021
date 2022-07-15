@@ -2,13 +2,16 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
-	"github.com/shopspring/decimal"
 	"log"
 	"net/http"
-	"packs/internal/app"
 	"strings"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/shopspring/decimal"
+
+	"packs/internal/app"
 )
 
 func MwHandler1(next http.Handler) http.Handler {
@@ -37,7 +40,7 @@ func (a *Api) GetBalance(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&wallet)
 	if err != nil {
-		ErrHandler(w, err, 400)
+		ErrHandler(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -47,14 +50,20 @@ func (a *Api) GetBalance(w http.ResponseWriter, r *http.Request) {
 
 	err = validateStruct(wallet)
 	if err != nil {
-		ErrHandler(w, app.ErrInvalidArgument, 400)
+		ErrHandler(w, app.ErrInvalidArgument, http.StatusBadRequest)
 		return
 	}
 
 	returnBalance, err := a.app.GetUserBalance(r.Context(), wallet.UserID, strings.ToUpper(wallet.Currency))
 	if err != nil {
-		ErrHandler(w, err, 500)
-		return
+		switch {
+		case errors.Is(err, app.ErrNotFound):
+			ErrHandler(w, err, http.StatusNotFound)
+			return
+		default:
+			ErrHandler(w, err, http.StatusInternalServerError)
+			return
+		}
 	}
 
 	err = json.NewEncoder(w).Encode(app.Wallet{
@@ -63,14 +72,14 @@ func (a *Api) GetBalance(w http.ResponseWriter, r *http.Request) {
 		Balance: returnBalance.Balance,
 	})
 	if err != nil {
-		ErrHandler(w, err, 500)
+		ErrHandler(w, err, http.StatusInternalServerError)
 		return
 	}
 }
 
 func (a *Api) TransferBetweenWallets(w http.ResponseWriter, r *http.Request) {
 
-	var transfer app.TransferBetweenUsers
+	var transfer app.Transaction
 
 	err := json.NewDecoder(r.Body).Decode(&transfer)
 	if err != nil {

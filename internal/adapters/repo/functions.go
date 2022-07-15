@@ -2,8 +2,10 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 
 	"packs/internal/app"
@@ -13,6 +15,8 @@ const (
 	tableWallet      = "wallet"
 	tableTransaction = "transaction"
 )
+
+var _ app.Repo = &Repo{}
 
 func (r Repo) CreateWallet(ctx context.Context, userID uint) (*app.Wallet, error) {
 	var wallet app.Wallet
@@ -39,105 +43,16 @@ func (r Repo) GetWallet(ctx context.Context, userID uint) (*app.Wallet, error) {
 	return &wallet, nil
 }
 
-func (r Repo) Change(ctx context.Context, walletID uint, amount decimal.Decimal, status string) (*app.Wallet, error) {
+func (r Repo) Change(ctx context.Context, walletID uint, amount decimal.Decimal) (*app.Wallet, error) {
 	var wallet app.Wallet
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, convertErr(err)
-	}
-
-	queryTransaction := fmt.Sprintf("insert into %s (sender_id, receiver_id, amount, status) values ($1, $1, $2, $3)", tableTransaction)
-	row, err := tx.ExecContext(ctx, queryTransaction, walletID, amount, status)
-	if err != nil {
-		tx.Rollback()
-		return nil, convertErr(err)
-	}
-
-	total, err := row.RowsAffected()
-	if err != nil {
-		tx.Rollback()
-		return nil, convertErr(err)
-	}
-
-	if total != 1 {
-		tx.Rollback()
-		return nil, fmt.Errorf("total != 1")
-	}
 
 	query := fmt.Sprintf("update %s set balance = balance + $1 where id = $2 returning id, user_id, balance", tableWallet)
-	err = tx.QueryRowContext(ctx, query, amount, walletID).Scan(&wallet.ID, &wallet.UserID, &wallet.Balance)
+	err := r.db.QueryRowContext(ctx, query, amount, walletID).Scan(&wallet.ID, &wallet.UserID, &wallet.Balance)
 	if err != nil {
-		tx.Rollback()
 		return nil, convertErr(err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("tx.Commit: %w", err)
 	}
 
 	return &wallet, nil
-}
-
-func (r Repo) TransactionBetweenUsers(ctx context.Context, transfer app.TransferBetweenUsers, status string) (*app.TransactionsLists, error) {
-	var transaction app.TransactionsLists
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, convertErr(err)
-	}
-
-	querySender := fmt.Sprintf("update %s set balance = balance-$1 where user_id = $2", tableWallet)
-	rowsUP, err := tx.ExecContext(ctx, querySender, transfer.Amount, transfer.SenderID)
-	if err != nil {
-		tx.Rollback()
-		return nil, convertErr(err)
-	}
-
-	rowsSender, err := rowsUP.RowsAffected()
-	if err != nil {
-		tx.Rollback()
-		return nil, convertErr(err)
-	}
-
-	if rowsSender != 1 {
-		tx.Rollback()
-		return nil, fmt.Errorf("rowsSender != 1")
-	}
-
-	queryReceiver := fmt.Sprintf("update %s set balance = balance+$1 where user_id = $2", tableWallet)
-	rowsDown, err := tx.ExecContext(ctx, queryReceiver, transfer.Amount, transfer.ReceiverID)
-	if err != nil {
-		tx.Rollback()
-		return nil, convertErr(err)
-	}
-
-	rowsReceiver, err := rowsDown.RowsAffected()
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("Receiver.Rows.Affected: %w", err)
-	}
-
-	if rowsReceiver != 1 {
-		tx.Rollback()
-		return nil, fmt.Errorf("rowsReceiver != 1")
-	}
-
-	queryTransaction := fmt.Sprintf("insert into %s (sender_id, receiver_id, amount, status) values ((select id from wallet where user_id = $1), (select id from wallet where user_id = $2), $3, $4) returning id, sender_id, receiver_id, amount, created_at, status", tableTransaction)
-	row := tx.QueryRowContext(ctx, queryTransaction, transfer.SenderID, transfer.ReceiverID, transfer.Amount, status)
-	err = row.Scan(&transaction.ID, &transaction.FromWallet, &transaction.ToWallet, &transaction.Amount, &transaction.CreatedAt, &transaction.Status)
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("tx.QueryRowContext: %w", convertErr(err))
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("tx.Commit: %w", err)
-	}
-
-	return &transaction, nil
 }
 
 func (r Repo) GetUserTransactionsByParams(ctx context.Context, params app.UserTransactionsParam) ([]app.TransactionsLists, int, error) {
@@ -176,4 +91,45 @@ func (r Repo) StopConnect() error {
 		return fmt.Errorf("r.db.Close: %w", err)
 	}
 	return nil
+}
+
+func (r Repo) Tx(ctx context.Context, f func(app.Repo) error) error {
+	opts := &sql.TxOptions{
+		Isolation: sql.LevelSerializable,
+		ReadOnly:  false,
+	}
+
+	return txHelper(ctx, r.db, opts, func(tx *sqlx.Tx) error {
+		return f(&txRepo{tx: tx})
+	})
+}
+
+func (r Repo) Transaction(ctx context.Context, tr app.Transaction) (*app.TransactionsLists, error) {
+	var transaction app.TransactionsLists
+
+	queryTransaction := fmt.Sprintf("insert into %s (sender_id, receiver_id, amount, status) values ((select id from wallet where user_id = $1), (select id from wallet where user_id = $2), $3, $4) returning id, sender_id, receiver_id, amount, created_at, status", tableTransaction)
+	err := r.db.GetContext(ctx, &transaction, queryTransaction, tr.SenderID, tr.ReceiverID, tr.Amount, tr.Amount)
+	if err != nil {
+		return nil, fmt.Errorf("tx.QueryRowContext: %w", convertErr(err))
+	}
+
+	return &transaction, nil
+}
+
+func txHelper(ctx context.Context, db *sqlx.DB, opts *sql.TxOptions, cb func(tx *sqlx.Tx) error) error {
+	tx, err := db.BeginTxx(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("db.BeginTx: %w", err)
+	}
+
+	err = cb(tx)
+	if err != nil {
+		errRollback := tx.Rollback()
+		if errRollback != nil {
+			err = fmt.Errorf("%w: %s", err, errRollback)
+		}
+		return err
+	}
+
+	return tx.Commit()
 }
