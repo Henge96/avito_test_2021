@@ -31,8 +31,8 @@ type Repo interface {
     TaskRepo
 	Create(ctx context.Context, user User) (User, error)
 	Delete(ctx context.Context, userID uuid.UUID) error
+        Update(ctx, updateParams updateParams) error
 }
-// Метода получения данных в репо нет, тк забирать их будем из мапы.
 
 type TaskRepo interface {
 		SaveTask(context.Context, Task) (uuid.UUID, error)
@@ -111,6 +111,6 @@ const (
 при рестарте мы возьмем все не зафинишированные таски. Если это не существенно и, скажем, после выключения приложения все стирается,
 то можно просто после изменения инфы в бд без таски хранить данные в мапу.
 
-Метода получения списка из репо нет в связи с тем, что данные будут получены из мапы в app слое.
+Метода получения списка из репо нет в связи с тем, что данные будут получены из мапы в app слое реализуя своеобразный кэш из оперативки.
 
 
