@@ -1,9 +1,11 @@
 package api
 
 import (
-	"github.com/shopspring/decimal"
-	"packs/internal/app"
 	"time"
+
+	"github.com/shopspring/decimal"
+
+	"packs/internal/app"
 )
 
 type ResponseBalance struct {
@@ -22,4 +24,8 @@ type Response struct {
 	Amount     decimal.Decimal `json:"amount"`
 	CreatedAt  time.Time       `json:"created_at"`
 	Status     string          `json:"status"`
+}
+
+type ResponseTransactionID struct {
+	ID int `json:"id"`
 }

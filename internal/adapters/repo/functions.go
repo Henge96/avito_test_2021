@@ -104,16 +104,16 @@ func (r Repo) Tx(ctx context.Context, f func(app.Repo) error) error {
 	})
 }
 
-func (r Repo) Transaction(ctx context.Context, tr app.Transaction) (*app.TransactionsLists, error) {
-	var transaction app.TransactionsLists
+func (r Repo) Transaction(ctx context.Context, tr app.Transaction) (int, error) {
+	var id int
 
-	queryTransaction := fmt.Sprintf("insert into %s (sender_id, receiver_id, amount, status) values ((select id from wallet where user_id = $1), (select id from wallet where user_id = $2), $3, $4) returning id, sender_id, receiver_id, amount, created_at, status", tableTransaction)
-	err := r.db.GetContext(ctx, &transaction, queryTransaction, tr.SenderID, tr.ReceiverID, tr.Amount, tr.Amount)
+	const query = `insert into transaction (sender_id, receiver_id, amount, status) values ($1, $2, $3, $4) returning id`
+	err := r.db.GetContext(ctx, &id, query, tr.SenderID, tr.ReceiverID, tr.Amount, tr.Status)
 	if err != nil {
-		return nil, fmt.Errorf("tx.QueryRowContext: %w", convertErr(err))
+		return 0, fmt.Errorf("tx.QueryRowContext: %w", convertErr(err))
 	}
 
-	return &transaction, nil
+	return id, nil
 }
 
 func txHelper(ctx context.Context, db *sqlx.DB, opts *sql.TxOptions, cb func(tx *sqlx.Tx) error) error {
