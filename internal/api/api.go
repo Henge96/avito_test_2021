@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"github.com/gorilla/mux"
+
 	"packs/internal/app"
 )
 
 type Application interface {
 	GetUserBalance(ctx context.Context, userId uint, currency string) (*app.Wallet, error)
 	ChangeBalance(ctx context.Context, change app.ChangeBalance) (*app.Wallet, error)
-	Transfer(ctx context.Context, transfer app.TransferBetweenUsers) (*app.TransactionsLists, error)
+	Transfer(ctx context.Context, transfer app.Transaction) (int, error)
 	GetUserTransactions(ctx context.Context, params app.UserTransactionsParam) ([]app.TransactionsLists, int, error)
 }
 

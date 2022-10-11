@@ -98,7 +98,7 @@ func (mr *MockRepoMockRecorder) GetWallet(ctx, i interface{}) *gomock.Call {
 }
 
 // TransactionBetweenUsers mocks base method.
-func (m *MockRepo) TransactionBetweenUsers(ctx context.Context, transfer app.TransferBetweenUsers, status string) (*app.TransactionsLists, error) {
+func (m *MockRepo) TransactionBetweenUsers(ctx context.Context, transfer app.Transaction, status string) (*app.TransactionsLists, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TransactionBetweenUsers", ctx, transfer, status)
 	ret0, _ := ret[0].(*app.TransactionsLists)

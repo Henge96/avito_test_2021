@@ -28,10 +28,11 @@ type (
 		Balance decimal.Decimal
 	}
 
-	TransferBetweenUsers struct {
+	Transaction struct {
 		SenderID   uint            `json:"sender_id" validate:"required"`
 		ReceiverID uint            `json:"receiver_id" validate:"required"`
 		Amount     decimal.Decimal `json:"amount" validate:"required"` //TODO: validate this struct
+		Status     string
 	}
 
 	TransactionsLists struct {
