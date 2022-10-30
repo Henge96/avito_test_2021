@@ -37,18 +37,18 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 }
 
 // Change mocks base method.
-func (m *MockRepo) Change(ctx context.Context, walletID uint, amount decimal.Decimal, status string) (*app.Wallet, error) {
+func (m *MockRepo) Change(ctx context.Context, walletID uint, amount decimal.Decimal) (*app.Wallet, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Change", ctx, walletID, amount, status)
+	ret := m.ctrl.Call(m, "Change", ctx, walletID, amount)
 	ret0, _ := ret[0].(*app.Wallet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Change indicates an expected call of Change.
-func (mr *MockRepoMockRecorder) Change(ctx, walletID, amount, status interface{}) *gomock.Call {
+func (mr *MockRepoMockRecorder) Change(ctx, walletID, amount interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Change", reflect.TypeOf((*MockRepo)(nil).Change), ctx, walletID, amount, status)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Change", reflect.TypeOf((*MockRepo)(nil).Change), ctx, walletID, amount)
 }
 
 // CreateWallet mocks base method.
@@ -97,19 +97,33 @@ func (mr *MockRepoMockRecorder) GetWallet(ctx, i interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWallet", reflect.TypeOf((*MockRepo)(nil).GetWallet), ctx, i)
 }
 
-// TransactionBetweenUsers mocks base method.
-func (m *MockRepo) TransactionBetweenUsers(ctx context.Context, transfer app.Transaction, status string) (*app.TransactionsLists, error) {
+// Transaction mocks base method.
+func (m *MockRepo) Transaction(ctx context.Context, tr app.Transaction) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TransactionBetweenUsers", ctx, transfer, status)
-	ret0, _ := ret[0].(*app.TransactionsLists)
+	ret := m.ctrl.Call(m, "Transaction", ctx, tr)
+	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// TransactionBetweenUsers indicates an expected call of TransactionBetweenUsers.
-func (mr *MockRepoMockRecorder) TransactionBetweenUsers(ctx, transfer, status interface{}) *gomock.Call {
+// Transaction indicates an expected call of Transaction.
+func (mr *MockRepoMockRecorder) Transaction(ctx, tr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransactionBetweenUsers", reflect.TypeOf((*MockRepo)(nil).TransactionBetweenUsers), ctx, transfer, status)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Transaction", reflect.TypeOf((*MockRepo)(nil).Transaction), ctx, tr)
+}
+
+// Tx mocks base method.
+func (m *MockRepo) Tx(ctx context.Context, cb func(app.Repo) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Tx", ctx, cb)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Tx indicates an expected call of Tx.
+func (mr *MockRepoMockRecorder) Tx(ctx, cb interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tx", reflect.TypeOf((*MockRepo)(nil).Tx), ctx, cb)
 }
 
 // MockExchangeClient is a mock of ExchangeClient interface.
