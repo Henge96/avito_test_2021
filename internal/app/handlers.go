@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/shopspring/decimal"
@@ -26,15 +27,14 @@ func (a *Core) GetUserBalance(ctx context.Context, userID uint, currency string)
 
 func (a *Core) ChangeBalance(ctx context.Context, change ChangeBalance) (wallet *Wallet, err error) {
 	wallet, err = a.repo.GetWallet(ctx, change.UserID)
-	if err != nil && err != ErrNotFound {
-		return nil, fmt.Errorf("a.repo.GetWallet: %w", err)
-	}
-
-	if err == ErrNotFound {
+	switch {
+	case errors.Is(err, ErrNotFound):
 		wallet, err = a.repo.CreateWallet(ctx, change.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("a.repo.CreateWallet: %w", err)
 		}
+	case err != nil:
+		return nil, fmt.Errorf("a.repo.GetWallet: %w", err)
 	}
 
 	err = a.repo.Tx(ctx, func(repo Repo) error {
@@ -72,15 +72,14 @@ func (a *Core) Transfer(ctx context.Context, transfer Transaction) (id int, err 
 	}
 
 	receiverWallet, err := a.repo.GetWallet(ctx, transfer.ReceiverID)
-	if err != nil && err != ErrNotFound {
-		return 0, fmt.Errorf("a.repo.GetWalletByUser: %w", err)
-	}
-
-	if err == ErrNotFound && transfer.Amount.GreaterThan(decimal.NewFromInt(0)) {
+	switch {
+	case errors.Is(err, ErrNotFound) && transfer.Amount.GreaterThan(decimal.NewFromInt(0)):
 		receiverWallet, err = a.repo.CreateWallet(ctx, transfer.ReceiverID)
 		if err != nil {
 			return 0, fmt.Errorf("a.repo.CreateWallet: %w", err)
 		}
+	case err != nil:
+		return 0, fmt.Errorf("a.repo.GetWalletByUser: %w", err)
 	}
 
 	err = a.repo.Tx(ctx, func(repo Repo) error {
